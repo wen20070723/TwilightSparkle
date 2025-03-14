@@ -3,9 +3,14 @@ const expandButtons = document.querySelectorAll('.expand-btn');
 expandButtons.forEach((button) => {
     button.addEventListener('click', function () {
         const hiddenContent = this.nextElementSibling;
-        const isExpanded = hiddenContent.style.display === 'block';
-        hiddenContent.style.display = isExpanded ? 'none' : 'block';
-        this.textContent = isExpanded ? '展开更多' : '收起内容';
+        const isExpanded = hiddenContent.classList.contains('expanded');
+        if (isExpanded) {
+            hiddenContent.classList.remove('expanded');
+            this.textContent = '展开更多';
+        } else {
+            hiddenContent.classList.add('expanded');
+            this.textContent = '收起内容';
+        }
     });
 });
 
@@ -57,6 +62,9 @@ let traps = [];
 let stars = [];
 let gameInterval;
 let touchStartX = 0;
+let lastPlayerX = 0;
+let trapSpeed = 5;
+let trapGenerateRate = 0.02;
 
 // 初始化游戏画布大小
 function initCanvasSize() {
@@ -80,12 +88,23 @@ function initGame() {
     gameOverPopup.classList.add('hidden');
     isGameRunning = false;
     clearInterval(gameInterval);
+    trapSpeed = 5;
+    trapGenerateRate = 0.02;
 }
 
 // 生成陷阱
 function generateTrap() {
     const trapX = Math.random() * (gameCanvas.width - 20);
-    traps.push({ x: trapX, y: 0, width: 20, height: 20 });
+    const trapType = Math.random();
+    let color;
+    if (trapType < 0.2) {
+        color = 'blue'; // 蓝色方块，碰到不动不掉血
+    } else if (trapType < 0.4) {
+        color = 'orange'; // 橙色方块，必须移动才会掉血
+    } else {
+        color = 'red'; // 普通红色方块
+    }
+    traps.push({ x: trapX, y: 0, width: 20, height: 20, color: color });
 }
 
 // 生成星星
@@ -94,18 +113,27 @@ function generateStar() {
     stars.push({ x: starX, y: 0, width: 10, height: 10 });
 }
 
+// 生成回血方块
+function generateHealBlock() {
+    if (Math.random() < 0.005) {
+        const healX = Math.random() * (gameCanvas.width - 20);
+        traps.push({ x: healX, y: 0, width: 20, height: 20, color: 'green' });
+    }
+}
+
 // 绘制玩家
 function drawPlayer() {
     ctx.fillStyle = 'purple';
     ctx.fillRect(playerX, gameCanvas.height - 30, 30, 30);
+    lastPlayerX = playerX;
 }
 
 // 绘制陷阱
 function drawTraps() {
-    ctx.fillStyle = 'red';
     traps.forEach((trap) => {
+        ctx.fillStyle = trap.color;
         ctx.fillRect(trap.x, trap.y, trap.width, trap.height);
-        trap.y += 5;
+        trap.y += trapSpeed;
     });
     traps = traps.filter((trap) => trap.y < gameCanvas.height);
 }
@@ -129,16 +157,54 @@ function checkCollision() {
             gameCanvas.height - 30 < trap.y + trap.height &&
             gameCanvas.height - 30 + 30 > trap.y
         ) {
-            if (magicEnergy >= 100) {
-                magicEnergy = 0;
-                magicEnergyElement.textContent = magicEnergy;
+            if (trap.color === 'blue') {
+                if (playerX !== lastPlayerX) {
+                    if (magicEnergy >= 100) {
+                        magicEnergy = 0;
+                        magicEnergyElement.textContent = magicEnergy;
+                        traps.splice(index, 1);
+                    } else {
+                        health--;
+                        healthElement.textContent = health;
+                        traps.splice(index, 1);
+                        if (health <= 0) {
+                            endGame();
+                        }
+                    }
+                }
+            } else if (trap.color === 'orange') {
+                if (playerX === lastPlayerX) {
+                    if (magicEnergy >= 100) {
+                        magicEnergy = 0;
+                        magicEnergyElement.textContent = magicEnergy;
+                        traps.splice(index, 1);
+                    } else {
+                        health--;
+                        healthElement.textContent = health;
+                        traps.splice(index, 1);
+                        if (health <= 0) {
+                            endGame();
+                        }
+                    }
+                }
+            } else if (trap.color === 'green') {
+                if (health < 3) {
+                    health++;
+                    healthElement.textContent = health;
+                }
                 traps.splice(index, 1);
             } else {
-                health--;
-                healthElement.textContent = health;
-                traps.splice(index, 1);
-                if (health <= 0) {
-                    endGame();
+                if (magicEnergy >= 100) {
+                    magicEnergy = 0;
+                    magicEnergyElement.textContent = magicEnergy;
+                    traps.splice(index, 1);
+                } else {
+                    health--;
+                    healthElement.textContent = health;
+                    traps.splice(index, 1);
+                    if (health <= 0) {
+                        endGame();
+                    }
                 }
             }
         }
@@ -159,6 +225,14 @@ function checkCollision() {
             }
             magicEnergyElement.textContent = magicEnergy;
             stars.splice(index, 1);
+
+            // 随着得分增加，加快陷阱速度和生成率
+            if (score % 5 === 0 && trapSpeed < 10) {
+                trapSpeed += 1;
+            }
+            if (score % 10 === 0 && trapGenerateRate < 0.1) {
+                trapGenerateRate += 0.01;
+            }
         }
     });
 }
@@ -170,8 +244,9 @@ function gameLoop() {
     drawTraps();
     drawStars();
     checkCollision();
+    generateHealBlock();
 
-    if (Math.random() < 0.02) {
+    if (Math.random() < trapGenerateRate) {
         generateTrap();
     }
     if (Math.random() < 0.01) {

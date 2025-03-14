@@ -149,6 +149,26 @@ nav a:hover::after {
     transform: scale(1.05);
 }
 
+/* 新增的返回主页按钮样式 */
+nav a#home-button {
+    background-color: #ffd700;
+    color: #333;
+    padding: 5px 10px;
+    border-radius: 3px;
+    margin-left: 20px;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+nav a#home-button:hover {
+    background-color: #ffc107;
+    transform: translateY(-1px);
+}
+
+nav a#home-button::after {
+    display: none;
+}
+
 /* 主体内容样式 */
 main {
     padding: 20px;
@@ -230,7 +250,7 @@ h2:hover::after {
 
 .fun-facts {
     margin-top: 20px;
-    background-color: rgba(106, 90, 205, 0.1); /* 删除了冒号，并保留了一个rgba函数 */
+    background-color: rgba(106, 90, 205, 0.1);
     padding: 10px;
     border-radius: 5px;
 }
@@ -305,18 +325,14 @@ h2:hover::after {
 }
 
 .hidden-content {
-    display: none;
+    max-height: 0;
+    overflow: hidden;
     margin-top: 10px;
-    animation: fadeIn 0.3s ease;
+    transition: max-height 0.3s ease;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+.hidden-content.expanded {
+    max-height: 500px; /* 可根据实际内容调整 */
 }
 
 .friends-container {
@@ -454,6 +470,23 @@ h2:hover::after {
 
 .game-button:hover {
     background-color: #5a4bbd;
+    transform: scale(1.05);
+}
+
+/* 重新开始按钮样式 */
+#restartButton {
+    background-color: #ff69b4;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#restartButton:hover {
+    background-color: #ff1493;
     transform: scale(1.05);
 }
 
